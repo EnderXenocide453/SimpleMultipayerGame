@@ -1,18 +1,18 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Photon.Pun;
 
-public class SpawnPlayer : MonoBehaviour
+public class SpawnPlayer : MonoBehaviourPun
 {
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
+    //Инстанциируемый игрок
+    public string playerPath;
 
-    // Update is called once per frame
-    void Update()
+    //Список точек спавна
+    public List<Vector2> spawnPoints;
+
+    private void Start()
     {
-        
+        Vector2 pos = new Vector2(Random.Range(-2, 2), Random.Range(-1, 1));
+        PhotonNetwork.Instantiate(playerPath, pos, Quaternion.identity);
     }
 }
