@@ -62,6 +62,8 @@ public class PlayerController : MonoBehaviour
 
     void Start()
     {
+        DontDestroyOnLoad(this);
+
         _view = GetComponent<PhotonView>();
         _body = GetComponent<Rigidbody2D>();
 
@@ -74,6 +76,7 @@ public class PlayerController : MonoBehaviour
         _sprite = GetComponent<SpriteRenderer>();
 
         _eye = transform.GetChild(0).GetChild(0);
+        _eyeJoystick = _moveJoystick;
 
         //Установка видов атак
         primaryAttack = StartAutoAttack;

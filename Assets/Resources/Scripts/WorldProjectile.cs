@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
 
-public class WorldProjectile : MonoBehaviourPun
+public class WorldProjectile : MonoBehaviour
 {
     private Collider2D _collider;
     private SpriteRenderer _sprite;
