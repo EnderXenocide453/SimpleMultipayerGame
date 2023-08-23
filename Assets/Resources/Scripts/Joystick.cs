@@ -24,7 +24,6 @@ public class Joystick : MonoBehaviour
     {
         _transform = GetComponent<RectTransform>();
         _origin = _transform.position;
-        _origin.z = 0;
     }
 
     void Update()
