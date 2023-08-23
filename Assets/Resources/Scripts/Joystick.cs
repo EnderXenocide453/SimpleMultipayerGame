@@ -14,11 +14,14 @@ public class Joystick : MonoBehaviour
     private bool _pressed = false;
 
     public float deathDist = 0;
-    public float additionalDist = 0;
     public float maxDist = 1;
 
     [SerializeField]
     private Vector2 _axis = Vector2.zero;
+
+    public delegate void JoystickEventsHandler();
+    public event JoystickEventsHandler onPress;
+    public event JoystickEventsHandler onRelease;
 
     void Start()
     {
@@ -36,6 +39,8 @@ public class Joystick : MonoBehaviour
     {
         _pressed = true;
         _fingerID = Input.touches[Input.touchCount - 1].fingerId;
+
+        onPress.Invoke();
     }
 
     public void Release() 
@@ -43,6 +48,8 @@ public class Joystick : MonoBehaviour
         _pressed = false;
         _transform.position = _origin;
         _axis = Vector2.zero;
+
+        onRelease.Invoke();
     }
 
     public void Follow()

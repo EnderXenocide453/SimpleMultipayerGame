@@ -248,6 +248,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 4
   accel: 0.2
+  maxHealth: 100
+  maxMana: 100
+  primaryProjectile:
+    speed: 2
+    damage: 10
+    cooldown: 0.2
+    sprite: {fileID: -1771163280, guid: 58fcebfc8ed527b439ef784dbdb875a2, type: 3}
+  extraProjectile:
+    speed: 2
+    damage: 10
+    cooldown: 0.2
+    sprite: {fileID: -1771163280, guid: 58fcebfc8ed527b439ef784dbdb875a2, type: 3}
 --- !u!50 &1683228639615989134
 Rigidbody2D:
   serializedVersion: 4
