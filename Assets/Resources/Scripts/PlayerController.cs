@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Photon.Pun;
 
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviour, IPunObservable
 {
     //PhotonView текущего игрока
     private PhotonView _view;
@@ -24,6 +24,8 @@ public class PlayerController : MonoBehaviour
     private Animator _anim;
     //Спрайт персонажа
     private SpriteRenderer _sprite;
+    //Индикатор здоровья
+    private Image _healthIndicator;
 
     //Направление взгляда
     private Vector2 _lookDir = Vector2.right;
@@ -31,6 +33,23 @@ public class PlayerController : MonoBehaviour
     //Глаз
     private Transform _eye;
     private Joystick _eyeJoystick;
+
+    //Переменные атаки
+    private bool _isAttack = false;
+    private Projectile _curProjectile;
+
+    public delegate void AttackHandler();
+    public event AttackHandler onAttackEnds;
+
+    //Обычная атака
+    [SerializeField]
+    public Projectile primaryProjectile;
+    public AttackHandler primaryAttack;
+
+    //Особая атака
+    [SerializeField]
+    public Projectile extraProjectile;
+    public AttackHandler extraAttack;
 
     //Скорость и ускорение
     public float speed = 4.0f;
@@ -43,44 +62,39 @@ public class PlayerController : MonoBehaviour
     private float _curHealth;
     private float _curMana;
 
-    //Переменные атаки
-    public delegate void AttackHandler();
-    public event AttackHandler onAttackEnds;
-
-    private bool _isAttack = false;
-    private Projectile _curProjectile;
-
-    //Обычная атака
-    [SerializeField]
-    public Projectile primaryProjectile;
-    public AttackHandler primaryAttack;
-
-    //Особая атака
-    [SerializeField]
-    public Projectile extraProjectile;
-    public AttackHandler extraAttack;
+    public int playerID;
 
     void Start()
     {
         DontDestroyOnLoad(this);
-
+        
         _view = GetComponent<PhotonView>();
         _body = GetComponent<Rigidbody2D>();
+        _anim = GetComponent<Animator>();
+        _sprite = GetComponent<SpriteRenderer>();
+
+        _curHealth = maxHealth;
+        _curMana = maxMana;
+
+        _healthIndicator = transform.GetChild(1).GetChild(0).GetComponent<Image>();
+
+        //Установка видов атак
+        primaryAttack = StartAutoAttack;
+        extraAttack = StartAimShot;
+
+        //Дальнейший код выполняется только для текущего игрока
+        if (!_view.IsMine) return;
+
+        playerID = PhotonNetwork.LocalPlayer.ActorNumber;
 
         _moveJoystick = GameObject.Find("MoveJoystick").GetComponentInChildren<Joystick>();
         _attackJoystick = GameObject.Find("AttackJoystick").GetComponentInChildren<Joystick>();
         _extraAttackJoystick = GameObject.Find("ExtraAttackJoystick").GetComponentInChildren<Joystick>();
         _defenseButton = GameObject.Find("DefenseButton").GetComponentInChildren<Button>();
 
-        _anim = GetComponent<Animator>();
-        _sprite = GetComponent<SpriteRenderer>();
-
         _eye = transform.GetChild(0).GetChild(0);
-        _eyeJoystick = _moveJoystick;
 
-        //Установка видов атак
-        primaryAttack = StartAutoAttack;
-        extraAttack = StartAimShot;
+        _eyeJoystick = _moveJoystick;
 
         //Привязка атаки к событиям джойстиков
         _attackJoystick.onPress += PrimaryAttackBegun;
@@ -170,7 +184,7 @@ public class PlayerController : MonoBehaviour
     private void SimpleShot()
     {
         WorldProjectile proj = PhotonNetwork.Instantiate("Prefabs/Projectile", _eye.position, Quaternion.identity).GetComponent<WorldProjectile>();
-        proj.InitProjectile(_curProjectile, _lookDir.magnitude == 0 ? _moveJoystick.GetAxis() : _lookDir);
+        proj.InitProjectile(_curProjectile, _lookDir.magnitude == 0 ? Vector2.right : _lookDir, playerID);
 
         //Отписываемся от события окончания атаки на случай применения прицельного выстрела
         onAttackEnds -= SimpleShot;
@@ -192,6 +206,55 @@ public class PlayerController : MonoBehaviour
             attackFunc.Invoke();
 
             yield return new WaitForSeconds(delay);
+        }
+    }
+
+    public void Death()
+    {
+        //if (!view.IsMine) return;
+
+        _anim.speed = 0;
+        _body.velocity = Vector2.zero;
+        GetComponent<Collider2D>().enabled = false;
+        _healthIndicator.rectTransform.localScale = Vector2.zero;
+
+        this.enabled = false;
+    }
+
+    //[PunRPC]
+    //public void HandleDeath()
+    //{
+    //    view.RPC()
+    //}
+
+    public void TakeDamage(float amount)
+    {
+        _view.RPC("TakeDamageRPC", RpcTarget.All, amount);
+    }
+
+    [PunRPC]
+    public void TakeDamageRPC(float amount)
+    {
+        SetHP(_curHealth - amount);
+    }
+
+    private void SetHP(float hp)
+    {
+        _curHealth = Mathf.Clamp(hp, 0, maxHealth);
+
+        _healthIndicator.rectTransform.offsetMax = Vector2.left * _curHealth / maxHealth;
+
+        if (_curHealth <= 0)
+            _anim.SetTrigger("death");
+    }
+
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.IsWriting) {
+            stream.SendNext(_curHealth);
+
+        } else {
+            SetHP((float)stream.ReceiveNext());
         }
     }
 }

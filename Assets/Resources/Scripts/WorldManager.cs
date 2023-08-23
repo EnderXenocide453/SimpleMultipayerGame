@@ -2,13 +2,15 @@ using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
 
-public class SpawnPlayer : MonoBehaviourPun
+public class WorldManager : MonoBehaviourPun
 {
     //Инстанциируемый игрок
     public string playerPath;
 
     //Список точек спавна
     public List<Vector2> spawnPoints;
+
+    public int count = 0;
 
     private void Start()
     {

@@ -348,7 +348,7 @@ GameObject:
   - component: {fileID: 705586884}
   - component: {fileID: 705586883}
   m_Layer: 0
-  m_Name: Spawner
+  m_Name: WorldManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -368,6 +368,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerPath: Prefabs/Player
   spawnPoints: []
+  count: 0
 --- !u!4 &705586884
 Transform:
   m_ObjectHideFlags: 0

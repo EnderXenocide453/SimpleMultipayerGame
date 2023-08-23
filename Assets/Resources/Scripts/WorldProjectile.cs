@@ -7,39 +7,36 @@ public class WorldProjectile : MonoBehaviour
 {
     private Collider2D _collider;
     private SpriteRenderer _sprite;
-
     private Projectile _projectile;
+    private Rigidbody2D _body;
 
     private Vector3 _dir;
 
     private bool _ready = false;
+    private int _playerID;
 
-    public void InitProjectile(Projectile config, Vector2 dir)
+    public void InitProjectile(Projectile config, Vector2 dir, int playerID)
     {
+        _body = GetComponent<Rigidbody2D>();
         _collider = GetComponent<Collider2D>();
         _sprite = GetComponent<SpriteRenderer>();
         _sprite.sprite = config.sprite;
 
+        _playerID = playerID;
         _projectile = config;
         _ready = true;
         _dir = dir.normalized;
+
+        _body.velocity = _dir * _projectile.speed;
     }
 
-    private void FixedUpdate()
+    private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (!_ready) return;
+        PlayerController player;
 
-        Move();
-    }
-
-    private void Move()
-    {
-        transform.position += _dir * _projectile.speed * Time.fixedDeltaTime;
-    }
-
-    private void OnCollisionEnter2D(Collision2D collision)
-    {
-        Destroy(gameObject);
+        if (collision.gameObject.TryGetComponent<PlayerController>(out player) && player.playerID != _playerID) {
+            player.TakeDamage(_projectile.damage);
+        }
     }
 }
 

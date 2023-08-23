@@ -40,7 +40,7 @@ public class Joystick : MonoBehaviour
         _pressed = true;
         _fingerID = Input.touches[Input.touchCount - 1].fingerId;
 
-        onPress.Invoke();
+        onPress?.Invoke();
     }
 
     public void Release() 
@@ -49,7 +49,7 @@ public class Joystick : MonoBehaviour
         _transform.position = _origin;
         _axis = Vector2.zero;
 
-        onRelease.Invoke();
+        onRelease?.Invoke();
     }
 
     public void Follow()
