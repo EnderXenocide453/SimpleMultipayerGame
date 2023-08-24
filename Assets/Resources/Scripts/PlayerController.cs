@@ -103,6 +103,8 @@ public class PlayerController : MonoBehaviour, IPunObservable
 
     void FixedUpdate()
     {
+        if (!(bool)PhotonNetwork.LocalPlayer.CustomProperties["isActive"]) return;
+
         //Если персонаж под управлением текущего игрока
         if (_view.IsMine) {
             //Переместить согласно джойстику
@@ -183,6 +185,8 @@ public class PlayerController : MonoBehaviour, IPunObservable
 
     private void SimpleShot()
     {
+        if (!(bool)PhotonNetwork.LocalPlayer.CustomProperties["isActive"]) return;
+
         WorldProjectile proj = PhotonNetwork.Instantiate("Prefabs/Projectile", _eye.position, Quaternion.identity).GetComponent<WorldProjectile>();
         proj.InitProjectile(_curProjectile, _lookDir.magnitude == 0 ? Vector2.right : _lookDir, playerID);
 
@@ -202,6 +206,8 @@ public class PlayerController : MonoBehaviour, IPunObservable
 
     private IEnumerator CycleAttack(AttackHandler attackFunc, float delay)
     {
+        yield return new WaitForEndOfFrame();
+
         while (_isAttack) {
             attackFunc.Invoke();
 
