@@ -1,5 +1,6 @@
 using UnityEngine;
 using Photon.Pun;
+using Photon.Realtime;
 using UnityEngine.SceneManagement;
 
 public class ConnectToServer : MonoBehaviourPunCallbacks
@@ -14,5 +15,10 @@ public class ConnectToServer : MonoBehaviourPunCallbacks
     {
         //Запуск игровой сцены
         SceneManager.LoadScene("Lobby");
+    }
+
+    private void OnDisconnectedFromMasterServer()
+    {
+        PhotonNetwork.ConnectUsingSettings();
     }
 }

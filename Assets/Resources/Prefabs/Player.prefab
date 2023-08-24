@@ -264,6 +264,7 @@ MonoBehaviour:
   maxHealth: 100
   maxMana: 100
   playerID: 0
+  manager: {fileID: 0}
 --- !u!50 &1683228639615989134
 Rigidbody2D:
   serializedVersion: 4

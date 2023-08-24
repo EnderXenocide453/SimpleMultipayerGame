@@ -42,6 +42,7 @@ MonoBehaviour:
   - RPCShot
   - TakeDamageRPC
   - AddCoinRPC
+  - RPC_Death
   DisableAutoOpenWizard: 1
   ShowSettings: 0
   DevRegionSetOnce: 1
