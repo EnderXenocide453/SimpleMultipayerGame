@@ -34,9 +34,12 @@ public class WorldProjectile : MonoBehaviour
     {
         PlayerController player;
 
-        if (collision.gameObject.TryGetComponent<PlayerController>(out player) && player.playerID != _playerID) {
-            player.TakeDamage(_projectile.damage);
+        if (collision.gameObject.TryGetComponent<PlayerController>(out player)) {
+            if (player.playerID != _playerID) player.TakeDamage(_projectile.damage);
+            else return;
         }
+
+        PhotonNetwork.Destroy(GetComponent<PhotonView>());
     }
 }
 

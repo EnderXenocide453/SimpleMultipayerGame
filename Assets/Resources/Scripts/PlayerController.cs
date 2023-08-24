@@ -32,7 +32,12 @@ public class PlayerController : MonoBehaviour, IPunObservable
 
     //Глаз
     private Transform _eye;
+    private float _eyeOffsetY;
     private Joystick _eyeJoystick;
+
+    //Монетки
+    [SerializeField]
+    private int _coinsCount = 0;
 
     //Переменные атаки
     private bool _isAttack = false;
@@ -92,7 +97,9 @@ public class PlayerController : MonoBehaviour, IPunObservable
         _defenseButton = GameObject.Find("DefenseButton").GetComponentInChildren<Button>();
 
         _eye = transform.GetChild(0).GetChild(0);
-
+        Sprite s = _eye.GetComponent<SpriteRenderer>().sprite;
+        _eyeOffsetY = (s.rect.height / 2 - s.pivot.y) / s.pixelsPerUnit + _eye.parent.localPosition.y;
+        Debug.Log(_eyeOffsetY);
         _eyeJoystick = _moveJoystick;
 
         //Привязка атаки к событиям джойстиков
@@ -186,7 +193,7 @@ public class PlayerController : MonoBehaviour, IPunObservable
     {
         if (!(bool)PhotonNetwork.LocalPlayer.CustomProperties["isActive"]) return;
 
-        WorldProjectile proj = PhotonNetwork.Instantiate("Prefabs/Projectile", _eye.position, Quaternion.identity).GetComponent<WorldProjectile>();
+        WorldProjectile proj = PhotonNetwork.Instantiate("Prefabs/Projectile", _eye.position + Vector3.up * _eyeOffsetY, Quaternion.identity).GetComponent<WorldProjectile>();
         proj.InitProjectile(_curProjectile, _lookDir.magnitude == 0 ? Vector2.right : _lookDir, playerID);
 
         //Отписываемся от события окончания атаки на случай применения прицельного выстрела
@@ -232,16 +239,14 @@ public class PlayerController : MonoBehaviour, IPunObservable
     //    view.RPC()
     //}
 
-    public void TakeDamage(float amount)
-    {
-        _view.RPC("TakeDamageRPC", RpcTarget.All, amount);
-    }
+    public void TakeDamage(float amount) => _view.RPC("TakeDamageRPC", RpcTarget.All, amount);
 
     [PunRPC]
-    public void TakeDamageRPC(float amount)
-    {
-        SetHP(_curHealth - amount);
-    }
+    public void TakeDamageRPC(float amount) => SetHP(_curHealth - amount);
+
+    public void AddCoin() => _coinsCount++;
+    public int GetCoin() => _coinsCount;
+    private void SetCoin(int amount) => _coinsCount = amount;
 
     private void SetHP(float hp)
     {
@@ -257,9 +262,11 @@ public class PlayerController : MonoBehaviour, IPunObservable
     {
         if (stream.IsWriting) {
             stream.SendNext(_curHealth);
+            stream.SendNext(_coinsCount);
 
         } else {
             SetHP((float)stream.ReceiveNext());
+            SetCoin((int)stream.ReceiveNext());
         }
     }
 }
