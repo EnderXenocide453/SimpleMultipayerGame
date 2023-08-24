@@ -76,8 +76,6 @@ public class PlayerController : MonoBehaviour, IPunObservable
         _curHealth = maxHealth;
         _curMana = maxMana;
 
-        _healthIndicator = transform.GetChild(1).GetChild(0).GetComponent<Image>();
-
         //Установка видов атак
         primaryAttack = StartAutoAttack;
         extraAttack = StartAimShot;
@@ -88,6 +86,7 @@ public class PlayerController : MonoBehaviour, IPunObservable
         playerID = PhotonNetwork.LocalPlayer.ActorNumber;
 
         _moveJoystick = GameObject.Find("MoveJoystick").GetComponentInChildren<Joystick>();
+        _healthIndicator = GameObject.Find("HelthBarHolder").GetComponentInChildren<Image>();
         _attackJoystick = GameObject.Find("AttackJoystick").GetComponentInChildren<Joystick>();
         _extraAttackJoystick = GameObject.Find("ExtraAttackJoystick").GetComponentInChildren<Joystick>();
         _defenseButton = GameObject.Find("DefenseButton").GetComponentInChildren<Button>();
@@ -248,7 +247,7 @@ public class PlayerController : MonoBehaviour, IPunObservable
     {
         _curHealth = Mathf.Clamp(hp, 0, maxHealth);
 
-        _healthIndicator.rectTransform.offsetMax = Vector2.left * _curHealth / maxHealth;
+        if (_view.IsMine) _healthIndicator.transform.localScale = new Vector3(_curHealth / maxHealth, 1, 1);
 
         if (_curHealth <= 0)
             _anim.SetTrigger("death");
