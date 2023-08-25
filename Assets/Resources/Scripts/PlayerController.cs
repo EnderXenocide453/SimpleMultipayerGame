@@ -5,7 +5,7 @@ using UnityEngine.UI;
 using Photon.Pun;
 using Photon.Realtime;
 
-public class PlayerController : MonoBehaviour, IPunObservable
+public class PlayerController : MonoBehaviourPunCallbacks, IPunObservable
 {
     //PhotonView текущего игрока
     private PhotonView _view;
@@ -322,6 +322,11 @@ public class PlayerController : MonoBehaviour, IPunObservable
         yield return new WaitForSeconds(delay);
 
         SetFeatures(PlayerFeaturesFabric.GetPlayerFeatures()[playerID - 1]);
+    }
+
+    public override void OnLeftRoom()
+    {
+        Destroy(gameObject);
     }
 }
 

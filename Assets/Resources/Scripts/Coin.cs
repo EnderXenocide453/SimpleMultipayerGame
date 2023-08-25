@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
 
-public class Coin : MonoBehaviour
+public class Coin : MonoBehaviourPunCallbacks
 {
     private void Start()
     {
@@ -19,5 +19,10 @@ public class Coin : MonoBehaviour
 
             PhotonNetwork.Destroy(GetComponent<PhotonView>());
         }
+    }
+
+    public override void OnLeftRoom()
+    {
+        Destroy(gameObject);
     }
 }

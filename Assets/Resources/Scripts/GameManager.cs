@@ -6,6 +6,8 @@ using Photon.Pun.UtilityScripts;
 using ExitGames.Client.Photon;
 using Photon.Realtime;
 using UnityEngine.SceneManagement;
+using System.Collections;
+using Hashtable = ExitGames.Client.Photon.Hashtable;
 
 public class GameManager : MonoBehaviourPunCallbacks
 {
@@ -201,8 +203,18 @@ public class GameManager : MonoBehaviourPunCallbacks
             PhotonNetwork.RaiseEvent(EventCodes.deathEvent, datas, RaiseEventOptions.Default, ExitGames.Client.Photon.SendOptions.SendUnreliable);
         }
 
+        StartCoroutine(Disconnect());
+    }
+
+    public IEnumerator Disconnect()
+    {
         PhotonNetwork.LeaveRoom();
-        SceneManager.LoadScene(0);
+        
+        while (PhotonNetwork.InRoom)
+            yield return new WaitForSecondsRealtime(0.1f);
+
+        SceneManager.LoadScene(1);
+        Destroy(gameObject);
     }
 }
 
