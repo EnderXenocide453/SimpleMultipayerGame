@@ -5,8 +5,9 @@ using Photon.Pun;
 using Photon.Pun.UtilityScripts;
 using ExitGames.Client.Photon;
 using Photon.Realtime;
+using UnityEngine.SceneManagement;
 
-public class GameManager : MonoBehaviourPun
+public class GameManager : MonoBehaviourPunCallbacks
 {
     public GameManager Instance;
 
@@ -187,6 +188,21 @@ public class GameManager : MonoBehaviourPun
 
         _scoreList.Add(new PlayerInfo(PhotonNetwork.PlayerList[playerID - 1].NickName, (int)PhotonNetwork.PlayerList[playerID - 1].CustomProperties["coins"]));
         SetAliveCount(_countAlive - 1);
+    }
+
+    public void Quit()
+    {
+        if ((bool)PhotonNetwork.LocalPlayer.CustomProperties["isAlive"]) {
+            object[] datas = new object[] { PhotonNetwork.LocalPlayer.ActorNumber };
+
+            RaiseEventOptions options = RaiseEventOptions.Default;
+            options.Receivers = ReceiverGroup.All;
+
+            PhotonNetwork.RaiseEvent(EventCodes.deathEvent, datas, RaiseEventOptions.Default, ExitGames.Client.Photon.SendOptions.SendUnreliable);
+        }
+
+        PhotonNetwork.LeaveRoom();
+        SceneManager.LoadScene(0);
     }
 }
 
