@@ -158,7 +158,7 @@ public class GameManager : MonoBehaviourPun
             RegistrateDeath((int)objects[0]);
         } 
         //Запрос на получение seed
-        else if (obj.Code == EventCodes.getFeatureRequest && PhotonNetwork.IsMasterClient) {
+        else if (obj.Code == EventCodes.getFeatureRequest) {
             //получаем id отправителя
             object[] objects = (object[])obj.CustomData;
             int id = (int)objects[0];
