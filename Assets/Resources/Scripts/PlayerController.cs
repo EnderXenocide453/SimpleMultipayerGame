@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using Photon.Pun;
+using Photon.Realtime;
 
 public class PlayerController : MonoBehaviour, IPunObservable
 {
@@ -105,7 +106,7 @@ public class PlayerController : MonoBehaviour, IPunObservable
         _eye = transform.GetChild(0).GetChild(0);
         Sprite s = _eye.GetComponent<SpriteRenderer>().sprite;
         _eyeOffsetY = (s.rect.height / 2 - s.pivot.y) / s.pixelsPerUnit + _eye.parent.localPosition.y;
-        Debug.Log(_eyeOffsetY);
+        
         _eyeJoystick = _moveJoystick;
 
         //Привязка атаки к событиям джойстиков
@@ -115,7 +116,7 @@ public class PlayerController : MonoBehaviour, IPunObservable
 
     void FixedUpdate()
     {
-        if (!(bool)PhotonNetwork.LocalPlayer.CustomProperties["isActive"]) return;
+        if (!(bool)PhotonNetwork.LocalPlayer.CustomProperties["isActive"] || !(bool)PhotonNetwork.LocalPlayer.CustomProperties["isAlive"]) return;
 
         //Если персонаж под управлением текущего игрока
         if (_view.IsMine) {
@@ -197,7 +198,7 @@ public class PlayerController : MonoBehaviour, IPunObservable
 
     private void SimpleShot()
     {
-        if (!(bool)PhotonNetwork.LocalPlayer.CustomProperties["isActive"]) return;
+        if (!(bool)PhotonNetwork.LocalPlayer.CustomProperties["isActive"] || !(bool)PhotonNetwork.LocalPlayer.CustomProperties["isAlive"]) return;
 
         WorldProjectile proj = PhotonNetwork.Instantiate("Prefabs/Projectile", _eye.position + Vector3.up * _eyeOffsetY, Quaternion.identity).GetComponent<WorldProjectile>();
         proj.InitProjectile(_curProjectile, _lookDir.magnitude == 0 ? Vector2.right : _lookDir, playerID);
@@ -232,12 +233,15 @@ public class PlayerController : MonoBehaviour, IPunObservable
         _anim.speed = 0;
 
         if (_view.IsMine) {
-            object[] datas = new object[] { playerID };
-            PhotonNetwork.RaiseEvent(EventCodes.deathEvent, datas, Photon.Realtime.RaiseEventOptions.Default, ExitGames.Client.Photon.SendOptions.SendUnreliable);
+            object[] datas = new object[] { playerID, _coinsCount };
+
+            RaiseEventOptions options = RaiseEventOptions.Default;
+            options.Receivers = ReceiverGroup.All;
+
+            PhotonNetwork.RaiseEvent(EventCodes.deathEvent, datas, RaiseEventOptions.Default, ExitGames.Client.Photon.SendOptions.SendUnreliable);
             _healthIndicator.rectTransform.localScale = Vector2.zero;
-            _view.RPC("RPC_Death", RpcTarget.All, PhotonNetwork.LocalPlayer.ActorNumber);
-            PhotonNetwork.LocalPlayer.CustomProperties["isActive"] = false;
-            manager.RegistrateDeath(PhotonNetwork.LocalPlayer.ActorNumber);
+            //_view.RPC("RPC_Death", RpcTarget.All, PhotonNetwork.LocalPlayer.ActorNumber);
+            //manager.RegistrateDeath(PhotonNetwork.LocalPlayer.ActorNumber);
         }
         _body.velocity = Vector2.zero;
         GetComponent<Collider2D>().enabled = false;
@@ -260,23 +264,26 @@ public class PlayerController : MonoBehaviour, IPunObservable
     [PunRPC]
     public void TakeDamageRPC(float amount) => SetHP(_curHealth - amount);
 
-    public void AddCoin()
-    {
-        SetCoin(_coinsCount + 1);
-    }
+    public void AddCoin() => _view.RPC("RPC+AddCoin", RpcTarget.All);
+
+    [PunRPC]
+    public void RPC_AddCoin() => SetCoin(_coinsCount + 1);
+
     public int GetCoin() => _coinsCount;
+    
     private void SetCoin(int amount)
     {
-        if (_view.IsMine) {
-            _coinsCount = amount;
+        _coinsCount = amount;
+        Debug.Log(_coinsCount);
 
-            if (!PhotonNetwork.LocalPlayer.CustomProperties.ContainsKey("coins")) {
-                ExitGames.Client.Photon.Hashtable prop = new ExitGames.Client.Photon.Hashtable();
-                prop.Add("coins", amount);
-                PhotonNetwork.SetPlayerCustomProperties(prop);
-            } else
-                PhotonNetwork.LocalPlayer.CustomProperties["coins"] = amount;
-        }
+        //if (_view.IsMine) {
+        //    object[] datas = new object[] { playerID, amount };
+
+        //    RaiseEventOptions options = RaiseEventOptions.Default;
+        //    options.Receivers = ReceiverGroup.All;
+
+        //    PhotonNetwork.RaiseEvent(EventCodes.coinEvent, datas, RaiseEventOptions.Default, ExitGames.Client.Photon.SendOptions.SendUnreliable);
+        //}
     }
 
     private void SetHP(float hp)
@@ -293,12 +300,12 @@ public class PlayerController : MonoBehaviour, IPunObservable
     {
         if (stream.IsWriting) {
             stream.SendNext(_curHealth);
-            stream.SendNext(_coinsCount);
+            //stream.SendNext(_coinsCount);
             stream.SendNext(playerID);
 
         } else {
             SetHP((float)stream.ReceiveNext());
-            SetCoin((int)stream.ReceiveNext());
+            //SetCoin((int)stream.ReceiveNext());
             int id = (int)stream.ReceiveNext();
             playerID = id == 0 ? playerID : id;
         }

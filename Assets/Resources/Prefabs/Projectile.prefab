@@ -117,11 +117,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d6f1cf114c267f146902c2a52420d5bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _projectile:
-    speed: 2
-    damage: 10
-    cooldown: 0.2
-    sprite: {fileID: 0}
 --- !u!114 &8332498017141382434
 MonoBehaviour:
   m_ObjectHideFlags: 0

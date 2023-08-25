@@ -47,14 +47,25 @@ public class GameManager : MonoBehaviourPun
 
         _countAlive = PhotonNetwork.PlayerList.Length;
 
+        Hashtable playerProperties = new Hashtable();
+        playerProperties.Add("isActive", false);
+        playerProperties.Add("isAlive", true);
+        playerProperties.Add("coins", 0);
+
+        foreach (var player in PhotonNetwork.PlayerList) {
+            player.SetCustomProperties(playerProperties);
+        }
+
         PlayerNumbering.OnPlayerNumberingChanged += () =>
         {
-            Debug.Log(PhotonNetwork.PlayerList.Length);
-
             SetPlayersActivity(PhotonNetwork.PlayerList.Length >= minPlayers);
 
             int delta = PhotonNetwork.PlayerList.Length - _countAlive;
             SetAliveCount(_countAlive + delta);
+
+            if (delta > 0) {
+                PhotonNetwork.PlayerList[PhotonNetwork.PlayerList.Length - 1].SetCustomProperties(playerProperties);
+            }
         };
     }
 
@@ -69,11 +80,11 @@ public class GameManager : MonoBehaviourPun
         _gameStarted = value;
         waitField.enabled = !value;
 
-        Hashtable playerActive = new Hashtable();
-        playerActive.Add("isActive", value);
+        Hashtable playerProperties = new Hashtable();
+        playerProperties.Add("isActive", value);
 
         foreach (var player in PhotonNetwork.PlayerList) {
-            player.SetCustomProperties(playerActive);
+            player.SetCustomProperties(playerProperties);
         }
     }
 
@@ -98,6 +109,30 @@ public class GameManager : MonoBehaviourPun
 
         if (_countAlive < 2 && _gameStarted) {
             content.parent.localPosition = Vector3.zero;
+
+            Transform row;
+
+            for (int i = 0; i < _countAlive; i++) {
+                row = Instantiate(tableRow, content).transform;
+
+                row.GetChild(0).GetComponent<TMPro.TMP_Text>().text = (_countAlive - i).ToString();
+                row.GetChild(1).GetComponent<TMPro.TMP_Text>().text = _scoreList[i].nickName;
+                row.GetChild(2).GetComponent<TMPro.TMP_Text>().text = _scoreList[i].coinsCount.ToString();
+            }
+
+            foreach (Player player in PhotonNetwork.PlayerList) {
+                if ((bool)player.CustomProperties["isAlive"]) {
+                    row = Instantiate(tableRow, content).transform;
+
+                    row.GetChild(0).GetComponent<TMPro.TMP_Text>().text = "1";
+                    row.GetChild(1).GetComponent<TMPro.TMP_Text>().text = player.NickName;
+                    row.GetChild(2).GetComponent<TMPro.TMP_Text>().text = player.CustomProperties["coins"].ToString();
+
+                    break;
+                }
+            }
+
+            
         }
     }
 
@@ -115,18 +150,22 @@ public class GameManager : MonoBehaviourPun
     {
         if (obj.Code == EventCodes.deathEvent) {
             object[] objects = (object[])obj.CustomData;
+            PhotonNetwork.PlayerList[(int)objects[0] - 1].CustomProperties["coins"] = (int)objects[1];
             RegistrateDeath((int)objects[0]);
         }
     }
 
     public void RegistrateDeath(int playerID)
     {
-        SetAliveCount(_countAlive - 1);
+        PhotonNetwork.PlayerList[playerID - 1].CustomProperties["isAlive"] = false;
+
         _scoreList.Add(new PlayerInfo(PhotonNetwork.PlayerList[playerID - 1].NickName, (int)PhotonNetwork.PlayerList[playerID - 1].CustomProperties["coins"]));
+        SetAliveCount(_countAlive - 1);
     }
 }
 
 public static class EventCodes
 {
     public static byte deathEvent = 0;
+    public static byte coinEvent = 1;
 }
