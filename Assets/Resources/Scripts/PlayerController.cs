@@ -69,7 +69,6 @@ public class PlayerController : MonoBehaviour, IPunObservable
     private float _curMana;
 
     public int playerID;
-    public GameManager manager;
 
     public delegate void DeathHandler();
     public event DeathHandler onDeath;
@@ -83,6 +82,8 @@ public class PlayerController : MonoBehaviour, IPunObservable
         _anim = GetComponent<Animator>();
         _sprite = GetComponent<SpriteRenderer>();
 
+        _eye = transform.GetChild(0).GetChild(0);
+
         _curHealth = maxHealth;
         _curMana = maxMana;
 
@@ -90,7 +91,7 @@ public class PlayerController : MonoBehaviour, IPunObservable
         primaryAttack = StartAutoAttack;
         extraAttack = StartAimShot;
 
-        manager = GameObject.Find("GameManager").GetComponent<GameManager>();
+        StartCoroutine(SetFeaturesAfterTime(1));
 
         //Дальнейший код выполняется только для текущего игрока
         if (!_view.IsMine) return;
@@ -103,7 +104,6 @@ public class PlayerController : MonoBehaviour, IPunObservable
         _extraAttackJoystick = GameObject.Find("ExtraAttackJoystick").GetComponentInChildren<Joystick>();
         _defenseButton = GameObject.Find("DefenseButton").GetComponentInChildren<Button>();
 
-        _eye = transform.GetChild(0).GetChild(0);
         Sprite s = _eye.GetComponent<SpriteRenderer>().sprite;
         _eyeOffsetY = (s.rect.height / 2 - s.pivot.y) / s.pixelsPerUnit + _eye.parent.localPosition.y;
         
@@ -240,17 +240,9 @@ public class PlayerController : MonoBehaviour, IPunObservable
 
             PhotonNetwork.RaiseEvent(EventCodes.deathEvent, datas, RaiseEventOptions.Default, ExitGames.Client.Photon.SendOptions.SendUnreliable);
             _healthIndicator.rectTransform.localScale = Vector2.zero;
-            //_view.RPC("RPC_Death", RpcTarget.All, PhotonNetwork.LocalPlayer.ActorNumber);
-            //manager.RegistrateDeath(PhotonNetwork.LocalPlayer.ActorNumber);
         }
         _body.velocity = Vector2.zero;
         GetComponent<Collider2D>().enabled = false;
-    }
-
-    [PunRPC]
-    public void RPC_Death(int id)
-    {
-        manager.RegistrateDeath(id);
     }
 
     //[PunRPC]
@@ -313,6 +305,23 @@ public class PlayerController : MonoBehaviour, IPunObservable
             int id = (int)stream.ReceiveNext();
             playerID = id == 0 ? playerID : id;
         }
+    }
+
+    //Методы кастомизации
+    private void SetFeatures(PlayerFeatures features)
+    {
+        _sprite.color = features.bodyColor;
+        _eye.GetComponent<SpriteRenderer>().color = features.eyeColor;
+
+        if (_view.IsMine)
+            PhotonNetwork.LocalPlayer.NickName = features.nickName;
+    }
+
+    private IEnumerator SetFeaturesAfterTime(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+
+        SetFeatures(PlayerFeaturesFabric.GetPlayerFeatures()[playerID - 1]);
     }
 }
 

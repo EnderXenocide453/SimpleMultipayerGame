@@ -38,7 +38,18 @@ public class GameManager : MonoBehaviourPun
 
     private void Start()
     {
-        GeneratePlayerFeatures();
+        if (PhotonNetwork.IsMasterClient)
+            PlayerFeaturesFabric.seed = Random.Range(0, int.MaxValue);
+        else {
+            object[] objects = new object[] { PhotonNetwork.LocalPlayer.ActorNumber };
+
+            RaiseEventOptions options = RaiseEventOptions.Default;
+            options.Receivers = ReceiverGroup.Others;
+            options.TargetActors = new int[] { PhotonNetwork.MasterClient.ActorNumber };
+
+            PhotonNetwork.RaiseEvent(EventCodes.getFeatureRequest, objects, RaiseEventOptions.Default, SendOptions.SendUnreliable);
+        }
+
 
         Vector2 pos = new Vector2(Random.Range(-2, 2), Random.Range(-1, 1));
         PhotonNetwork.Instantiate(playerPath, spawnPoints[PhotonNetwork.PlayerList.Length - 1].position, Quaternion.identity);
@@ -67,12 +78,6 @@ public class GameManager : MonoBehaviourPun
                 PhotonNetwork.PlayerList[PhotonNetwork.PlayerList.Length - 1].SetCustomProperties(playerProperties);
             }
         };
-    }
-
-    private void GeneratePlayerFeatures()
-    {
-        Player player = PhotonNetwork.LocalPlayer;
-        player.NickName = "Amogus" + player.ActorNumber;
     }
 
     private void SetPlayersActivity(bool value)
@@ -151,6 +156,28 @@ public class GameManager : MonoBehaviourPun
         if (obj.Code == EventCodes.deathEvent) {
             object[] objects = (object[])obj.CustomData;
             RegistrateDeath((int)objects[0]);
+        } 
+        //Запрос на получение seed
+        else if (obj.Code == EventCodes.getFeatureRequest && PhotonNetwork.IsMasterClient) {
+            //получаем id отправителя
+            object[] objects = (object[])obj.CustomData;
+            int id = (int)objects[0];
+
+            //Отправляем сгенерированные фичи
+            objects = new object[] { PlayerFeaturesFabric.seed };
+
+            RaiseEventOptions options = RaiseEventOptions.Default;
+            options.Receivers = ReceiverGroup.Others;
+            options.TargetActors = new int[] { id };
+
+            PhotonNetwork.RaiseEvent(EventCodes.sendFeature, objects, RaiseEventOptions.Default, SendOptions.SendUnreliable);
+        } 
+        //Получение seed
+        else if (obj.Code == EventCodes.sendFeature && !PlayerFeaturesFabric.isInit) {
+            //принимаем фичи
+            object[] objects = (object[])obj.CustomData;
+            PlayerFeaturesFabric.seed = (int)objects[0];
+            PlayerFeaturesFabric.Reinit();
         }
     }
 
@@ -166,5 +193,82 @@ public class GameManager : MonoBehaviourPun
 public static class EventCodes
 {
     public static byte deathEvent = 0;
-    public static byte coinEvent = 1;
+    public static byte getFeatureRequest = 1;
+    public static byte sendFeature = 2;
+}
+
+public static class PlayerFeaturesFabric
+{
+    public static int seed = 0;
+    public static bool isInit { get; private set; } = false;
+
+    private static List<PlayerFeatures> _playerFeatures;
+    private static List<(string, Color)> _colors;
+
+    private static System.Random _rand;
+
+    private static void InitFabric()
+    {
+        _rand = new System.Random(seed);
+
+        SetColors();
+        GenerateFeatures();
+
+        isInit = true;
+    }
+
+    public static void Reinit()
+    {
+        InitFabric();
+    }
+
+    public static List<PlayerFeatures> GetPlayerFeatures()
+    {
+        if (!isInit) InitFabric();
+
+        return _playerFeatures;
+    }
+
+    private static void SetColors()
+    {
+        _colors = new List<(string, Color)>();
+
+        _colors.Add(("Серый", Color.gray));
+        _colors.Add(("Белый", Color.white));
+        _colors.Add(("Зеленый", Color.green));
+        _colors.Add(("Красный", Color.red));
+        _colors.Add(("Синий", Color.blue));
+        _colors.Add(("Бирюзовый", Color.cyan));
+        _colors.Add(("Желтый", Color.yellow));
+        _colors.Add(("Пурпурный", Color.magenta));
+    }
+
+    private static void GenerateFeatures()
+    {
+        _playerFeatures = new List<PlayerFeatures>();
+
+        foreach (var color in _colors) {
+            string name;
+            Color bodyColor;
+
+            (name, bodyColor) = color;
+            Color eyeColor = _colors[_rand.Next(0, _colors.Count)].Item2;
+
+            _playerFeatures.Add(new PlayerFeatures(name, bodyColor, eyeColor));
+        }
+    }
+}
+
+public class PlayerFeatures
+{
+    public string nickName;
+    public Color bodyColor;
+    public Color eyeColor;
+
+    public PlayerFeatures(string name, Color bodyColor, Color eyeColor)
+    {
+        nickName = name;
+        this.bodyColor = bodyColor;
+        this.eyeColor = eyeColor;
+    }
 }
