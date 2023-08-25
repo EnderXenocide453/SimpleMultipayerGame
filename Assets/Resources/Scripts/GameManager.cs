@@ -112,10 +112,10 @@ public class GameManager : MonoBehaviourPun
 
             Transform row;
 
-            for (int i = 0; i < _countAlive; i++) {
+            for (int i = 0; i < _scoreList.Count; i++) {
                 row = Instantiate(tableRow, content).transform;
 
-                row.GetChild(0).GetComponent<TMPro.TMP_Text>().text = (_countAlive - i).ToString();
+                row.GetChild(0).GetComponent<TMPro.TMP_Text>().text = (_scoreList.Count + _countAlive - i).ToString();
                 row.GetChild(1).GetComponent<TMPro.TMP_Text>().text = _scoreList[i].nickName;
                 row.GetChild(2).GetComponent<TMPro.TMP_Text>().text = _scoreList[i].coinsCount.ToString();
             }
@@ -150,7 +150,6 @@ public class GameManager : MonoBehaviourPun
     {
         if (obj.Code == EventCodes.deathEvent) {
             object[] objects = (object[])obj.CustomData;
-            PhotonNetwork.PlayerList[(int)objects[0] - 1].CustomProperties["coins"] = (int)objects[1];
             RegistrateDeath((int)objects[0]);
         }
     }

@@ -233,7 +233,7 @@ public class PlayerController : MonoBehaviour, IPunObservable
         _anim.speed = 0;
 
         if (_view.IsMine) {
-            object[] datas = new object[] { playerID, _coinsCount };
+            object[] datas = new object[] { playerID };
 
             RaiseEventOptions options = RaiseEventOptions.Default;
             options.Receivers = ReceiverGroup.All;
@@ -264,26 +264,30 @@ public class PlayerController : MonoBehaviour, IPunObservable
     [PunRPC]
     public void TakeDamageRPC(float amount) => SetHP(_curHealth - amount);
 
-    public void AddCoin() => _view.RPC("RPC+AddCoin", RpcTarget.All);
+    public void AddCoin() => SetCoin(_coinsCount + 1);
 
     [PunRPC]
-    public void RPC_AddCoin() => SetCoin(_coinsCount + 1);
+    public void RPC_AddCoin()
+    {
+        SetCoin(_coinsCount + 1);
+    }
 
     public int GetCoin() => _coinsCount;
     
     private void SetCoin(int amount)
     {
+        if (_coinsCount >= amount) return;
+
         _coinsCount = amount;
         Debug.Log(_coinsCount);
+        if (_view.IsMine)
+            _view.RPC("RPC_SetCoin", RpcTarget.All, _coinsCount);
+    }
 
-        //if (_view.IsMine) {
-        //    object[] datas = new object[] { playerID, amount };
-
-        //    RaiseEventOptions options = RaiseEventOptions.Default;
-        //    options.Receivers = ReceiverGroup.All;
-
-        //    PhotonNetwork.RaiseEvent(EventCodes.coinEvent, datas, RaiseEventOptions.Default, ExitGames.Client.Photon.SendOptions.SendUnreliable);
-        //}
+    [PunRPC]
+    private void RPC_SetCoin(int amount)
+    {
+        PhotonNetwork.PlayerList[playerID - 1].CustomProperties["coins"] = _coinsCount;
     }
 
     private void SetHP(float hp)
@@ -300,12 +304,12 @@ public class PlayerController : MonoBehaviour, IPunObservable
     {
         if (stream.IsWriting) {
             stream.SendNext(_curHealth);
-            //stream.SendNext(_coinsCount);
+            stream.SendNext(_coinsCount);
             stream.SendNext(playerID);
 
         } else {
             SetHP((float)stream.ReceiveNext());
-            //SetCoin((int)stream.ReceiveNext());
+            SetCoin((int)stream.ReceiveNext());
             int id = (int)stream.ReceiveNext();
             playerID = id == 0 ? playerID : id;
         }

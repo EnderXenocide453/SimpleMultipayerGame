@@ -1246,7 +1246,7 @@ MonoBehaviour:
   - {fileID: 742225197}
   - {fileID: 1062164752}
   - {fileID: 1303122202}
-  minPlayers: 1
+  minPlayers: 2
   waitField: {fileID: 1813484420}
   _countAlive: 0
   _scoreList: []
